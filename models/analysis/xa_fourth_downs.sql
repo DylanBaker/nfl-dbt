@@ -1,8 +1,7 @@
 {{
     config(
         materialized = 'incremental',
-        unique_key = 'play_key',
-        partition_by = 'game_date'
+        unique_key = 'play_key'
     )
 }}
 with plays as (

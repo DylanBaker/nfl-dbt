@@ -243,7 +243,7 @@ def data_load_bigquery(
         raw_file_path = load_file.resolve()
         print(f"Loading {raw_file_path}...")
 
-        bq_cmd = f"bq load --project_id {load_database} --dataset_id {load_schema} --replace --skip_leading_rows 1 {table_name} {raw_file_path}"
+        bq_cmd = f"bq load --autodetect --project_id {load_database} --dataset_id {load_schema} --replace --skip_leading_rows 1 {table_name} {raw_file_path}"
 
         print(bq_cmd)
         os.system(bq_cmd)
@@ -260,8 +260,8 @@ def main():
     base_dir = "data_prep"
     load_dir = "data_files_load"
     data_dir = "nflscrapR-data"
-    file_filter = "*_2019.csv"
-    # file_filter = "*.csv"
+    # file_filter = "*_2019.csv"
+    file_filter = "*.csv"
 
     dbt_profiles_path = Path(Path.home(), ".dbt", "profiles.yml")
     dbt_profiles = read_yaml(dbt_profiles_path)
