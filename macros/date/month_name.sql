@@ -1,5 +1,5 @@
 {% macro month_name(date, short=True) -%}
-  {{ adapter_macro('month_name', date, short) }}
+  {{ return(adapter.dispatch('month_name')(date, short)) }}
 {%- endmacro %}
 
 {% macro default__month_name(date, short) -%}

@@ -1,5 +1,5 @@
 {% macro day_name(date, short=True) -%}
-  {{ adapter_macro('day_name', date, short) }}
+  {{ return(adapter.dispatch('day_name')(date, short)) }}
 {%- endmacro %}
 
 {% macro default__day_name(date, short) -%}

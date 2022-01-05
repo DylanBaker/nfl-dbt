@@ -1,6 +1,6 @@
 {# --- DAY OF WEEK --- #}
 {% macro datepart_weekday() -%}
-  {{ adapter_macro('datepart_weekday') }}
+  {{ return(adapter.dispatch('datepart_weekday')()) }}
 {%- endmacro %}
 
 {% macro default__datepart_weekday() -%}
@@ -21,7 +21,7 @@
 
 {# --- MONTH --- #}
 {% macro datepart_month() -%}
-  {{ adapter_macro('datepart_month') }}
+  {{ return(adapter.dispatch('datepart_month')()) }}
 {%- endmacro %}
 
 {% macro default__datepart_month() -%}

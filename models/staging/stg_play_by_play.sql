@@ -70,7 +70,7 @@ deduped_plays as (
         play_dedupe_sequence_nbr = 1
 )
 select 
-    {{ dbt_utils.surrogate_key('r.game_id', 'r.play_id' )}} as play_key,
+    {{ dbt_utils.surrogate_key(['r.game_id', 'r.play_id'] )}} as play_key,
     {{ get_season_code('r.season_type_code', 'r.season_nbr') }} as season_code,
     r.*
 from 

@@ -1,5 +1,5 @@
 {% macro left(string_text, length_expression) -%}
-    {{ adapter_macro('left', string_text, length_expression) }}
+  {{ return(adapter.dispatch('left')(string_text, length_expression)) }}
 {% endmacro %}
 
 {% macro default__left(string_text, length_expression) %}

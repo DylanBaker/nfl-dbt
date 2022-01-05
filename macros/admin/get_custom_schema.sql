@@ -2,7 +2,7 @@
     {%- set default_schema = target.schema -%}
     {%- if custom_schema_name is not none -%}
         {%- if custom_schema_name not in ("staging") and 
-                ("audit" in target.name or var("audit") == true) -%}
+                ("audit" in target.name or var("audit", false) == true) -%}
         audit
         {%- else -%}
         {{ custom_schema_name | trim }}

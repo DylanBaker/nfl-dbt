@@ -3,3 +3,6 @@ target/
 dbt_modules/
 logs/
 data_prep/nflscrapR-data
+dbt_packages/
+keyfile.json
+venv/

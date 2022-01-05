@@ -1,5 +1,5 @@
 {% macro int_to_date(val) -%}
-    {{ adapter_macro('int_to_date', val) }}
+  {{ return(adapter.dispatch('int_to_date')(val)) }}
 {% endmacro %}
 
 {%- macro default__int_to_date(val) -%}

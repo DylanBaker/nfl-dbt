@@ -14,10 +14,10 @@ num_cores = multiprocessing.cpu_count()
 N_JOBS = num_cores
 
 
-def read_yaml(yaml_path, storage_model='local'):
+def read_yaml(yaml_path, storage_model="local"):
 
     try:
-        with open(Path(yaml_path).resolve(), 'r') as f:
+        with open(Path(yaml_path).resolve(), "r") as f:
             yml = yaml.load(f, Loader=yaml.FullLoader)
     except FileNotFoundError:
         print(f"Could not find {yaml_path}. Please check that {yaml_path} exists.")
@@ -56,17 +56,21 @@ def fix_dtypes(df):
     return df, dtypes
 
 
-def create_empty_table(engine, df, dtypes, table_name, schema_name, partition_col=None, replace=False):
+def create_empty_table(
+    engine, df, dtypes, table_name, schema_name, partition_col=None, replace=False
+):
 
-    create_sql = pd.io.sql.get_schema(df, f"{schema_name}.{table_name}", con=engine, dtype=dtypes)
+    create_sql = pd.io.sql.get_schema(
+        df, f"{schema_name}.{table_name}", con=engine, dtype=dtypes
+    )
     if not replace:
         drop_sql = None
         create_sql = create_sql.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS")
     else:
         drop_sql = f"DROP TABLE IF EXISTS {schema_name}.{table_name};"
 
-    create_sql = create_sql.replace('"', '')
-    create_sql = create_sql.replace('desc ', '"desc" ')
+    create_sql = create_sql.replace('"', "")
+    create_sql = create_sql.replace("desc ", '"desc" ')
 
     if partition_col:
         create_sql += f"PARTITION BY {partition_col}"
@@ -96,16 +100,22 @@ def prep_data_file(data_file, base_dir, data_dir, target_dir):
     id_col = "game_id"
 
     if date_col in df.columns:
-        df[date_col] = df[date_col].apply(lambda x: pd.to_datetime(x) + pd.Timedelta(seconds=1))
+        df[date_col] = df[date_col].apply(
+            lambda x: pd.to_datetime(x) + pd.Timedelta(seconds=1)
+        )
     elif id_col in df.columns:
-        df[date_col] = df[id_col].apply(lambda x: pd.to_datetime(str(x)[:8]) + pd.Timedelta(seconds=1))
+        df[date_col] = df[id_col].apply(
+            lambda x: pd.to_datetime(str(x)[:8]) + pd.Timedelta(seconds=1)
+        )
 
     df, dtypes = fix_dtypes(df)
 
     dfs["table_name"] = table_name
     dfs["data"] = df
     dfs["dtypes"] = dtypes
-    target_file_path = Path(base_dir, target_dir, parent_path, f"{table_name}.csv").resolve()
+    target_file_path = Path(
+        base_dir, target_dir, parent_path, f"{table_name}.csv"
+    ).resolve()
     save_df(df, target_file_path)
 
     return dfs
@@ -121,16 +131,21 @@ def prep_data_files(data_files, base_dir, data_dir, target_dir):
     with backend:
 
         dfs = Parallel(n_jobs=N_JOBS, verbose=10)(
-            delayed(prep_data_file)(
-                data_file, base_dir, data_dir, target_dir
-            )
+            delayed(prep_data_file)(data_file, base_dir, data_dir, target_dir)
             for data_file in data_files
         )
 
     return dfs
 
 
-def create_tables(engine, data_frames, schema_name, dry_run=False, replace=False, supports_partitions=True):
+def create_tables(
+    engine,
+    data_frames,
+    schema_name,
+    dry_run=False,
+    replace=False,
+    supports_partitions=True,
+):
 
     for f in data_frames:
         table_name = f["table_name"]
@@ -147,28 +162,56 @@ def create_tables(engine, data_frames, schema_name, dry_run=False, replace=False
 
         if not dry_run:
             print(f"Creating table {schema_name}.{table_name}...")
-            create_empty_table(engine, df, dtypes, table_name, schema_name, partition_col, replace=replace)
+            create_empty_table(
+                engine,
+                df,
+                dtypes,
+                table_name,
+                schema_name,
+                partition_col,
+                replace=replace,
+            )
 
 
 def clone_nfl_data_repo(base_dir, data_dir):
     if not Path(base_dir, data_dir).exists():
-        clone_cmd = f"cd {base_dir}; git clone https://github.com/ryurko/nflscrapR-data.git"
+        clone_cmd = (
+            f"cd {base_dir}; git clone https://github.com/ryurko/nflscrapR-data.git"
+        )
         os.system(clone_cmd)
     else:
         os.system(f"cd {base_dir};cd {data_dir};git pull")
 
 
-def data_prep(engine, source_data_sub_folders, base_dir, data_dir, load_dir, file_filter, load_schema, replace, supports_partitions):
+def data_prep(
+    engine,
+    source_data_sub_folders,
+    base_dir,
+    data_dir,
+    load_dir,
+    file_filter,
+    load_schema,
+    replace,
+    supports_partitions,
+):
 
     for sub_folder in source_data_sub_folders:
         p = Path(base_dir, data_dir, sub_folder)
         data_files = sorted(list(p.rglob(file_filter)))
 
         dfs = prep_data_files(data_files, base_dir, data_dir, load_dir)
-        create_tables(engine, dfs, load_schema, replace=replace, supports_partitions=supports_partitions)
+        create_tables(
+            engine,
+            dfs,
+            load_schema,
+            replace=replace,
+            supports_partitions=supports_partitions,
+        )
 
 
-def data_load_pg(load_path, file_filter, db_host, db_user, db_password, load_database, load_schema):
+def data_load_pg(
+    load_path, file_filter, db_host, db_user, db_password, load_database, load_schema
+):
 
     for load_file in load_path.rglob(file_filter):
 
@@ -177,8 +220,10 @@ def data_load_pg(load_path, file_filter, db_host, db_user, db_password, load_dat
         print(f"Loading {raw_file_path}...")
 
         truncate_cmd = f"truncate table {table_name};"
-        copy_cmd = f"\\copy {table_name} from '{raw_file_path}' with delimiter ',' csv header;"
-        psql_cmd = f'PGPASSWORD={db_password} psql --host={db_host} --port=5432 --username={db_user} -w --dbname={load_database}'
+        copy_cmd = (
+            f"\\copy {table_name} from '{raw_file_path}' with delimiter ',' csv header;"
+        )
+        psql_cmd = f"PGPASSWORD={db_password} psql --host={db_host} --port=5432 --username={db_user} -w --dbname={load_database}"
 
         cmd = psql_cmd + f' --command="{truncate_cmd}"'
         print(cmd)
@@ -189,7 +234,9 @@ def data_load_pg(load_path, file_filter, db_host, db_user, db_password, load_dat
         os.system(cmd)
 
 
-def data_load_bigquery(load_path, file_filter, db_host, db_user, db_password, load_database, load_schema):
+def data_load_bigquery(
+    load_path, file_filter, db_host, db_user, db_password, load_database, load_schema
+):
 
     for load_file in load_path.rglob(file_filter):
         table_name = f"{load_schema}.{load_file.stem}"
@@ -220,7 +267,6 @@ def main():
     dbt_profiles = read_yaml(dbt_profiles_path)
 
     dbt_profile_name = "nfl"
-    # dbt_target_name = "pg_local"
     dbt_target_name = "bq"
 
     dbt_profile = dbt_profiles[dbt_profile_name]["outputs"][dbt_target_name]
@@ -250,14 +296,40 @@ def main():
 
     if do_prep:
         replace = True
-        data_prep(engine, source_data_sub_folders, base_dir, data_dir, load_dir, file_filter, load_schema, replace, supports_partitions)
+        data_prep(
+            engine,
+            source_data_sub_folders,
+            base_dir,
+            data_dir,
+            load_dir,
+            file_filter,
+            load_schema,
+            replace,
+            supports_partitions,
+        )
 
     if do_load:
         load_path = Path(base_dir, load_dir)
         if db_type == "postgres":
-            data_load_pg(load_path, file_filter, db_host, db_user, db_password, load_database, load_schema)
+            data_load_pg(
+                load_path,
+                file_filter,
+                db_host,
+                db_user,
+                db_password,
+                load_database,
+                load_schema,
+            )
         elif db_type == "bigquery":
-            data_load_bigquery(load_path, file_filter, db_host, db_user, db_password, load_database, load_schema)
+            data_load_bigquery(
+                load_path,
+                file_filter,
+                db_host,
+                db_user,
+                db_password,
+                load_database,
+                load_schema,
+            )
 
 
 if __name__ == "__main__":
